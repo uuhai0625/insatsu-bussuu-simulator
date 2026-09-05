@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>同人誌 印刷部数・損益分岐点シミュレーター(完全無料)</title>
+<style>
+  :root {
+    --accent: #4d3f8f;
+    --accent-dark: #362b6b;
+    --bg: #f7f6fb;
+    --card: #ffffff;
+    --border: #e2ddea;
+    --text: #2e2a38;
+    --muted: #7d7689;
+    --profit: #2f8f5b;
+    --loss: #c94a4a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Hiragino Sans", "Yu Gothic", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+  }
+  header {
+    background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+    color: #fff;
+    padding: 28px 20px;
+    text-align: center;
+  }
+  header h1 { margin: 0 0 8px; font-size: 22px; }
+  header p { margin: 0; font-size: 13px; opacity: 0.9; }
+  main {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  .card h2 {
+    margin: 0 0 14px;
+    font-size: 16px;
+    border-left: 4px solid var(--accent);
+    padding-left: 10px;
+  }
+  .field { margin-bottom: 14px; }
+  .field label {
+    display: block;
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  .field input[type="number"], .field input[type="text"] {
+    width: 100%;
+    padding: 9px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 15px;
+  }
+  .field-row { display: flex; gap: 10px; }
+  .field-row .field { flex: 1; }
+  .other-cost-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .other-cost-row input[type="text"] { flex: 2; }
+  .other-cost-row input[type="number"] { flex: 1; }
+  .other-cost-row button {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 6px 10px;
+  }
+  .btn {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 9px 16px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .btn.ghost {
+    background: none;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+  }
+  .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .summary-box {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    text-align: center;
+  }
+  .summary-box .label { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+  .summary-box .value { font-size: 20px; font-weight: bold; color: var(--accent-dark); }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { padding: 8px 6px; border-bottom: 1px solid var(--border); text-align: right; }
+  th:first-child, td:first-child { text-align: left; }
+  td.profit { color: var(--profit); font-weight: bold; }
+  td.loss { color: var(--loss); font-weight: bold; }
+  .bar-wrap { display: flex; align-items: center; gap: 8px; }
+  .bar-track { flex: 1; background: var(--border); border-radius: 4px; height: 10px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; }
+  .bar-fill.profit { background: var(--profit); }
+  .bar-fill.loss { background: var(--loss); }
+  .note {
+    font-size: 12px;
+    color: var(--muted);
+    background: var(--bg);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-top: 10px;
+    white-space: pre-wrap;
+  }
+  footer {
+    text-align: center;
+    font-size: 12px;
+    color: var(--muted);
+    padding: 24px 20px 40px;
+  }
+  footer a { color: var(--accent); }
+  @media print {
+    header, .btn-row, .no-print { display: none !important; }
+    body { background: #fff; }
+    .card { border: none; box-shadow: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>同人誌 印刷部数・損益分岐点シミュレーター</h1>
+  <p>印刷費と頒布価格を入れるだけで、何冊売れば黒字になるかをすぐ計算(完全無料・登録不要)</p>
+</header>
+
+<main>
+
+  <div class="card">
+    <h2>① 印刷費・部数</h2>
+    <div class="field-row">
+      <div class="field">
+        <label for="printCost">印刷費 合計(円・見積もり金額)</label>
+        <input type="number" id="printCost" min="0" placeholder="例: 45000">
+      </div>
+      <div class="field">
+        <label for="printQty">印刷部数(冊)</label>
+        <input type="number" id="printQty" min="1" placeholder="例: 100">
+      </div>
+    </div>
+    <div class="field">
+      <label>1冊あたりの印刷単価</label>
+      <div id="unitCostDisplay" style="font-size:15px; color:var(--muted);">部数を入力すると自動計算されます</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>② 頒布価格・その他費用</h2>
+    <div class="field">
+      <label for="price">頒布価格(円/冊)</label>
+      <input type="number" id="price" min="0" placeholder="例: 800">
+    </div>
+    <div class="field">
+      <label>その他の固定費(任意・参加費、交通費、机代、梱包資材など)</label>
+      <div id="otherCostRows"></div>
+      <button type="button" class="btn ghost" id="addCostBtn" style="margin-top:6px;">+ 費用項目を追加</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>③ 結果</h2>
+    <div class="summary-grid">
+      <div class="summary-box">
+        <div class="label">固定費 合計</div>
+        <div class="value" id="totalFixedOut">-</div>
+      </div>
+      <div class="summary-box">
+        <div class="label">損益分岐に必要な冊数</div>
+        <div class="value" id="breakEvenOut">-</div>
+      </div>
+      <div class="summary-box">
+        <div class="label">完売した場合の利益</div>
+        <div class="value" id="fullSellProfitOut">-</div>
+      </div>
+    </div>
+
+    <table id="resultTable">
+      <thead>
+        <tr><th>販売率</th><th>販売冊数</th><th>売上</th><th>損益</th><th style="width:120px;">グラフ</th></tr>
+      </thead>
+      <tbody id="resultBody"></tbody>
+    </table>
+
+    <div class="note">
+      ※ 印刷費は入稿後に確定した見積もり金額をそのまま入力してください(実際の印刷会社の料金表は反映していません)。
+      ※ 委託販売手数料・在庫の保管コスト等は含まれていません。必要な場合は「その他の固定費」に追加してください。
+      ※ 本ツールの計算結果は参考値です。実際の印刷費・搬入費用は必ず印刷会社・会場の案内でご確認ください。
+    </div>
+  </div>
+
+  <div class="btn-row no-print">
+    <button class="btn" id="saveBtn">このブラウザに保存</button>
+    <button class="btn ghost" id="loadBtn">保存データを読み込む</button>
+    <button class="btn ghost" id="printBtn">結果を印刷</button>
+  </div>
+
+</main>
+
+<footer>
+  <p>入力内容は一切外部に送信されません(すべてブラウザ内で完結します)。</p>
+  <p>不具合・ご要望は BOOTHメッセージ、または X(Twitter) <a href="https://x.com/uuhai0625" target="_blank" rel="noopener">@uuhai0625</a> まで。</p>
+</footer>
+
+<script>
+function esc(s) {
+  return (s || "").toString().replace(/[<>&"']/g, function (c) {
+    return { "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;", "'": "&#39;" }[c];
+  });
+}
+
+var SAVE_KEY = "insatsu_bussuu_simulator_v1";
+
+var data = {
+  printCost: null,
+  printQty: null,
+  price: null,
+  otherCosts: []
+};
+
+function fmtYen(n) {
+  if (!isFinite(n)) return "-";
+  return "¥" + Math.round(n).toLocaleString();
+}
+
+function renderOtherCosts() {
+  var wrap = document.getElementById("otherCostRows");
+  wrap.innerHTML = "";
+  data.otherCosts.forEach(function (c, idx) {
+    var row = document.createElement("div");
+    row.className = "other-cost-row";
+    row.innerHTML =
+      '<input type="text" data-idx="' + idx + '" data-field="label" placeholder="例: サークル参加費" value="' + esc(c.label) + '">' +
+      '<input type="number" data-idx="' + idx + '" data-field="amount" placeholder="円" value="' + (c.amount != null ? c.amount : "") + '">' +
+      '<button type="button" data-idx="' + idx + '" class="removeCostBtn">✕</button>';
+    wrap.appendChild(row);
+  });
+  wrap.querySelectorAll("input").forEach(function (el) {
+    el.addEventListener("input", function () {
+      var idx = Number(el.dataset.idx);
+      var field = el.dataset.field;
+      data.otherCosts[idx][field] = field === "amount" ? (el.value === "" ? null : Number(el.value)) : el.value;
+      calc();
+    });
+  });
+  wrap.querySelectorAll(".removeCostBtn").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      data.otherCosts.splice(Number(btn.dataset.idx), 1);
+      renderOtherCosts();
+      calc();
+    });
+  });
+}
+
+function calc() {
+  var printCost = Number(document.getElementById("printCost").value) || 0;
+  var printQty = Number(document.getElementById("printQty").value) || 0;
+  var price = Number(document.getElementById("price").value) || 0;
+
+  data.printCost = printCost || null;
+  data.printQty = printQty || null;
+  data.price = price || null;
+
+  var unitCostOut = document.getElementById("unitCostDisplay");
+  if (printQty > 0 && printCost > 0) {
+    unitCostOut.textContent = fmtYen(printCost / printQty) + " / 冊";
+  } else {
+    unitCostOut.textContent = "部数を入力すると自動計算されます";
+  }
+
+  var otherTotal = data.otherCosts.reduce(function (sum, c) {
+    return sum + (Number(c.amount) || 0);
+  }, 0);
+  var totalFixed = printCost + otherTotal;
+
+  document.getElementById("totalFixedOut").textContent = fmtYen(totalFixed);
+
+  var breakEvenOut = document.getElementById("breakEvenOut");
+  var fullSellProfitOut = document.getElementById("fullSellProfitOut");
+
+  if (price > 0) {
+    var breakEvenQty = Math.ceil(totalFixed / price);
+    breakEvenOut.textContent = breakEvenQty + " 冊";
+    if (printQty > 0 && breakEvenQty > printQty) {
+      breakEvenOut.style.color = "var(--loss)";
+    } else {
+      breakEvenOut.style.color = "var(--accent-dark)";
+    }
+  } else {
+    breakEvenOut.textContent = "-";
+  }
+
+  if (printQty > 0 && price > 0) {
+    var fullProfit = printQty * price - totalFixed;
+    fullSellProfitOut.textContent = fmtYen(fullProfit);
+    fullSellProfitOut.style.color = fullProfit >= 0 ? "var(--profit)" : "var(--loss)";
+  } else {
+    fullSellProfitOut.textContent = "-";
+  }
+
+  renderTable(printQty, price, totalFixed);
+}
+
+function renderTable(printQty, price, totalFixed) {
+  var body = document.getElementById("resultBody");
+  body.innerHTML = "";
+  if (!(printQty > 0 && price > 0)) {
+    body.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--muted);">印刷部数・頒布価格を入力してください</td></tr>';
+    return;
+  }
+  var ratios = [0.25, 0.5, 0.75, 1.0];
+  var profits = ratios.map(function (r) {
+    var sold = Math.round(printQty * r);
+    var revenue = sold * price;
+    return revenue - totalFixed;
+  });
+  var maxAbs = Math.max.apply(null, profits.map(Math.abs).concat([1]));
+
+  ratios.forEach(function (r, i) {
+    var sold = Math.round(printQty * r);
+    var revenue = sold * price;
+    var profit = profits[i];
+    var isProfit = profit >= 0;
+    var barPct = Math.round((Math.abs(profit) / maxAbs) * 100);
+    var tr = document.createElement("tr");
+    tr.innerHTML =
+      "<td>" + Math.round(r * 100) + "% 販売</td>" +
+      "<td>" + sold + " 冊</td>" +
+      "<td>" + fmtYen(revenue) + "</td>" +
+      '<td class="' + (isProfit ? "profit" : "loss") + '">' + (isProfit ? "+" : "") + fmtYen(profit) + "</td>" +
+      '<td><div class="bar-wrap"><div class="bar-track"><div class="bar-fill ' + (isProfit ? "profit" : "loss") + '" style="width:' + barPct + '%;"></div></div></div></td>';
+    body.appendChild(tr);
+  });
+}
+
+document.getElementById("printCost").addEventListener("input", calc);
+document.getElementById("printQty").addEventListener("input", calc);
+document.getElementById("price").addEventListener("input", calc);
+
+document.getElementById("addCostBtn").addEventListener("click", function () {
+  data.otherCosts.push({ label: "", amount: null });
+  renderOtherCosts();
+  calc();
+});
+
+document.getElementById("saveBtn").addEventListener("click", function () {
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+    alert("保存しました。");
+  } catch (e) {
+    alert("保存に失敗しました(ブラウザのプライベートモード等ではご利用いただけない場合があります)。");
+  }
+});
+
+document.getElementById("loadBtn").addEventListener("click", function () {
+  var raw;
+  try {
+    raw = localStorage.getItem(SAVE_KEY);
+  } catch (e) {
+    raw = null;
+  }
+  if (!raw) {
+    alert("保存されたデータが見つかりませんでした。");
+    return;
+  }
+  var loaded;
+  try {
+    loaded = JSON.parse(raw);
+  } catch (e) {
+    alert("保存データの形式が正しくないため読み込めませんでした。");
+    return;
+  }
+  if (!loaded || typeof loaded !== "object" || !Array.isArray(loaded.otherCosts)) {
+    alert("保存データの形式が正しくないため読み込めませんでした。");
+    return;
+  }
+  data.printCost = typeof loaded.printCost === "number" ? loaded.printCost : null;
+  data.printQty = typeof loaded.printQty === "number" ? loaded.printQty : null;
+  data.price = typeof loaded.price === "number" ? loaded.price : null;
+  data.otherCosts = loaded.otherCosts.filter(function (c) {
+    return c && typeof c === "object";
+  }).map(function (c) {
+    return { label: typeof c.label === "string" ? c.label : "", amount: typeof c.amount === "number" ? c.amount : null };
+  });
+
+  document.getElementById("printCost").value = data.printCost != null ? data.printCost : "";
+  document.getElementById("printQty").value = data.printQty != null ? data.printQty : "";
+  document.getElementById("price").value = data.price != null ? data.price : "";
+  renderOtherCosts();
+  calc();
+  alert("読み込みました。");
+});
+
+document.getElementById("printBtn").addEventListener("click", function () {
+  window.print();
+});
+
+renderOtherCosts();
+calc();
+</script>
+
+</body>
+</html>
