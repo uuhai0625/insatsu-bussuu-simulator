@@ -256,8 +256,8 @@ function renderOtherCosts() {
     var row = document.createElement("div");
     row.className = "other-cost-row";
     row.innerHTML =
-      '<input type="text" data-idx="' + idx + '" data-field="label" placeholder="例: サークル参加費" value="' + esc(c.label) + '">' +
-      '<input type="number" data-idx="' + idx + '" data-field="amount" placeholder="円" value="' + (c.amount != null ? c.amount : "") + '">' +
+      '<input type="text" data-idx="' + idx + '" data-field="label" placeholder="例: サークル参加費" aria-label="費用項目名" value="' + esc(c.label) + '">' +
+      '<input type="number" data-idx="' + idx + '" data-field="amount" placeholder="円" min="0" aria-label="金額(円)" value="' + (c.amount != null ? c.amount : "") + '">' +
       '<button type="button" data-idx="' + idx + '" class="removeCostBtn">✕</button>';
     wrap.appendChild(row);
   });
@@ -265,7 +265,11 @@ function renderOtherCosts() {
     el.addEventListener("input", function () {
       var idx = Number(el.dataset.idx);
       var field = el.dataset.field;
-      data.otherCosts[idx][field] = field === "amount" ? (el.value === "" ? null : Number(el.value)) : el.value;
+      if (field === "amount") {
+        data.otherCosts[idx][field] = el.value === "" ? null : Math.max(0, Number(el.value) || 0);
+      } else {
+        data.otherCosts[idx][field] = el.value;
+      }
       calc();
     });
   });
@@ -306,10 +310,11 @@ function calc() {
 
   if (price > 0) {
     var breakEvenQty = Math.ceil(totalFixed / price);
-    breakEvenOut.textContent = breakEvenQty + " 冊";
     if (printQty > 0 && breakEvenQty > printQty) {
+      breakEvenOut.textContent = "⚠ " + breakEvenQty + " 冊";
       breakEvenOut.style.color = "var(--loss)";
     } else {
+      breakEvenOut.textContent = breakEvenQty + " 冊";
       breakEvenOut.style.color = "var(--accent-dark)";
     }
   } else {
@@ -318,7 +323,7 @@ function calc() {
 
   if (printQty > 0 && price > 0) {
     var fullProfit = printQty * price - totalFixed;
-    fullSellProfitOut.textContent = fmtYen(fullProfit);
+    fullSellProfitOut.textContent = (fullProfit >= 0 ? "+" : "") + fmtYen(fullProfit);
     fullSellProfitOut.style.color = fullProfit >= 0 ? "var(--profit)" : "var(--loss)";
   } else {
     fullSellProfitOut.textContent = "-";
@@ -347,7 +352,8 @@ function renderTable(printQty, price, totalFixed) {
     var revenue = sold * price;
     var profit = profits[i];
     var isProfit = profit >= 0;
-    var barPct = Math.round((Math.abs(profit) / maxAbs) * 100);
+    var barPctRaw = (Math.abs(profit) / maxAbs) * 100;
+    var barPct = isFinite(barPctRaw) ? Math.max(0, Math.min(100, Math.round(barPctRaw))) : 0;
     var tr = document.createElement("tr");
     tr.innerHTML =
       "<td>" + Math.round(r * 100) + "% 販売</td>" +
